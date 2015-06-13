@@ -7,7 +7,7 @@ import java.awt.event.*;
 import javax.imageio.*;
 import javax.swing.*;
 import javax.swing.Timer;
-public class Recursive_Graphics 
+public class Traversal_Graphics 
 {
 	private static BufferedImage c;
 	private static BufferedImage master;
