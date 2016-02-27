@@ -7,6 +7,7 @@ import java.awt.event.*;
 import javax.imageio.*;
 import javax.swing.*;
 import javax.swing.Timer;
+
 public class Traversal_Graphics 
 {
 	private static BufferedImage c;
@@ -17,6 +18,8 @@ public class Traversal_Graphics
 	
 	public static class Fr extends JPanel
 	{
+		//Declare arrayLists for x position, y position, width, height, color
+		//and marker for each subimage
 		private static ArrayList<Integer> x = new ArrayList<Integer>();
 		private static ArrayList<Integer> y = new ArrayList<Integer>();
 		private static ArrayList<Integer> w = new ArrayList<Integer>();
@@ -37,6 +40,7 @@ public class Traversal_Graphics
 		}
 		public void fillCell(int xi, int yi, int width, int height, Color color, int mark)
 		{
+			//Create subimage with given parameters
 			x.add(xi);
 			y.add(yi);
 			w.add(width);
@@ -46,6 +50,7 @@ public class Traversal_Graphics
 		}
 		public void apply(Boolean oval)
 		{
+			//Paint the given image
 			Graphics gr = render.getGraphics();
 			for(int i = 0; i < x.size(); i++)
 			{
@@ -75,12 +80,23 @@ public class Traversal_Graphics
 	}
 	public static void main(String[] args) throws IOException
 	{
+		//Accept user image given by pathname
 		System.out.println("Subhodh Kotekal 2015\nImage Compression\nInput pathname for image file or DONE\n");
 		Scanner scan = new Scanner(System.in);
 		String path = scan.nextLine();
 		
+		//Prompt for circle or rectangle
+		System.out.println("Enter T or F for circle breakdown rather than rectangle: ");
+		String circle = scan.nextLine();
+		boolean circ = false;
+		if(circle.equals("T"))
+		{
+			circ = true;
+		}
+		
 		while(!path.toUpperCase().equals("DONE"))
 		{
+			//Initialize frame which contains the image
 			BufferedImage img = ImageIO.read(new File(path));
 			c = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_RGB);
 			fr = new Fr();
@@ -93,12 +109,14 @@ public class Traversal_Graphics
 			master = img;		
 			
 			//compress(img, 0, 0);
+			//Contains list of subimages and x, y, color, and level (number of divisions) for the subimages
 			ArrayList<BufferedImage> imgList = new ArrayList<BufferedImage>();
 			ArrayList<Integer> x = new ArrayList<Integer>();
 			ArrayList<Integer> y = new ArrayList<Integer>();
 			ArrayList<Color> colorList = new ArrayList<Color>();
 			ArrayList<Integer> level = new ArrayList<Integer>();
 			
+			//First image is simply the average color
 			imgList.add(img);
 			x.add(0);
 			y.add(0);
@@ -108,11 +126,15 @@ public class Traversal_Graphics
 			fr.fillCell(0, 0, img.getWidth(), img.getHeight(), colorList.get(0), 0);
 			fr.paintComponent(fr.getGraphics());
 			
-			
+			//Queue structure that holds the subimages such 
+			//that the subimages can be traversed in Breadth First manner.
+			//This means all of the subimages across the image will be divided
+			//to the desired error threshold rather than dividing by quadrant all
+			//the way down to the error threshold.
 			int counter = 0;
-			//Random rng = new Random();
 			while(imgList.size() > 0)
 			{
+					//Pop first subimage
 					counter += 3;
 					BufferedImage node = imgList.remove(0);
 					int nodeX = x.remove(0);
@@ -120,12 +142,6 @@ public class Traversal_Graphics
 					Color nodeC = colorList.remove(0);
 					int l = level.remove(0);
 					
-					/*int randIndex = rng.nextInt(imgList.size());
-					BufferedImage node = imgList.remove(randIndex);
-					int nodeX = x.remove(randIndex);
-					int nodeY = y.remove(randIndex);
-					Color nodeC = colorList.remove(randIndex);
-					int l = level.remove(randIndex);*/
 					
 					int addX = node.getWidth()/2;
 					int addY = node.getHeight()/2;
@@ -135,12 +151,11 @@ public class Traversal_Graphics
 					}
 					else
 					{
+						//Calculate variance of R, G, and B values of color between original image and subimage
 						double[] v = var(node, avg(img.getSubimage(nodeX, nodeY, node.getWidth(), node.getHeight())));
-						//double err = Math.max(Math.pow(v[0], 0.5), Math.max(Math.pow(v[1], 0.5), Math.pow(v[2], 0.5)))/(Math.min(Math.pow(v[0], 0.5), Math.min(Math.pow(v[1], 0.5), Math.pow(v[2], 0.5))));
-						//System.out.println(v[0] + " " + v[1] + " " + v[2]);// + " " + err);
-						if(!(v[0] < 300 && v[1] < 300 && v[2] < 300 && node.getWidth() < c.getWidth()))
-						//if(!(err < 1.1 && node.getWidth() < c.getWidth() ))
-						{			
+						if(!(v[0] < 700 && v[1] < 700 && v[2] < 700 && node.getWidth() < c.getWidth()) && node.getWidth() > 1 && node.getHeight()>1)
+						{	
+							//Divide image into four subimages
 							BufferedImage sub = node.getSubimage(0, 0, node.getWidth()/2, node.getHeight()/2); //TL Quadrant
 							imgList.add(sub);
 							int color = avg(sub); 
@@ -178,84 +193,36 @@ public class Traversal_Graphics
 							fr.fillCell(nodeX+addX, nodeY+addY, node.getWidth()/2, node.getHeight()/2, new Color(color), l+1);
 						}
 					}
-					//if(Math.pow(counter, 0.25) == Math.floor(Math.pow(counter, 0.25)))
+					
+					//Paint all of the divisions across the image at once
+					//This creates the simultaneous division aesthetic
 					if(!level.contains(l))
 					{
 						try {
 							Thread.sleep(500);
 						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
-						//fr.paint(fr.getGraphics());
-						fr.apply(false);
+						
+						fr.apply(circ);
 						fr.paintComponent(fr.getGraphics());
 						counter = ((int) Math.pow(counter, 0.25));
 					}
 			}
-			File outputfile = new File("C:\\Users\\Subhodh\\Desktop\\Export.jpg");
+			
+			//Output final image
+			path = path.substring(0, path.lastIndexOf("\\"));
+			File outputfile = new File(path + "\\Export.jpg");
 			ImageIO.write(fr.render, "jpg", outputfile);
 			System.out.println("COMPLETE\n");
 			path = scan.nextLine();
 		}
 		System.exit(0);
 	}
-	/*public static void compress(BufferedImage image, int x, int y)//(X, Y) : (Width, Height) is starting point
-	{
-		//fr.repaint();
-		//Thread.sleep(100);
-		int[] v = var(image, avg(master.getSubimage(x, y, image.getWidth(), image.getHeight())));
-		
-		if(v[0] < 100 && v[1] < 100 && v[2] < 100 && image.getWidth() < c.getWidth())
-		{		
-			return;
-		}
-		if(image.getWidth() <= 5 && image.getHeight() <= 2)
-		{
-			//c.setRGB(x, y, image.getRGB(0, 0));
-			fr.fillCell(x, y, image.getWidth()/2, image.getHeight()/2, new Color(image.getRGB(0, 0)));
-			return;
-		}
-
-		
-		int halfW = image.getWidth()/2;
-		int halfH = image.getHeight()/2;
-		int tempX = 0;
-		int tempY = 0;
-		
-		BufferedImage sub = image.getSubimage(0, 0, image.getWidth()/2, image.getHeight()/2); //TL Quadrant
-		int color = avg(sub); 
-		fr.fillCell(x, y, image.getWidth()/2, image.getHeight()/2, new Color(color));
-		compress(sub, x, y);
-		
-		sub = image.getSubimage(image.getWidth()/2, 0, image.getWidth()/2, image.getHeight()/2); //TR Quadrant
-		color = avg(sub); 
-		tempX = x;
-		x += halfW;
-		fr.fillCell(x, y, image.getWidth()/2, image.getHeight()/2, new Color(color));
-		compress(sub, x, y);
-		
-		sub = image.getSubimage(0, image.getHeight()/2, image.getWidth()/2, image.getHeight()/2); //BL Quadrant
-		color = avg(sub); 
-		x = tempX;
-		tempY = y;
-		y += halfH;
-		fr.fillCell(x, y, image.getWidth()/2, image.getHeight()/2, new Color(color));
-		compress(sub, x, y);
-		
-		sub = image.getSubimage(image.getWidth()/2, image.getHeight()/2, image.getWidth()/2, image.getHeight()/2); //BR Quadrant
-		color = avg(sub); 
-		tempX = x;
-		y = tempY;
-		tempY = y;
-		x += halfW;
-		y += halfH;
-		fr.fillCell(x, y, image.getWidth()/2, image.getHeight()/2, new Color(color));
-		compress(sub, x, y);
-		
-	}*/
 	public static int avg(BufferedImage image)
 	{
+		//Find average red, green, and blue color values.
+		//Mix these together to find average RGB value
 		double r = 0;
 		double g = 0;
 		double b = 0;
@@ -275,6 +242,8 @@ public class Traversal_Graphics
 	}
 	public static double[] var(BufferedImage image, int mean)
 	{
+		//Calculate variance in color by calculating
+		//variance in R, G, and B values
 		double[] ret = new double[3];
 		Color mcolor = new Color(mean);
 		int mred = mcolor.getRed();
